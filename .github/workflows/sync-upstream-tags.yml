@@ -1,0 +1,33 @@
+name: Sync Upstream Tags Automatically
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'          # 每 6 小时检查一次（可改成 '0 0 * * *' 每天一次，或 '0 */1 * * *' 每小时）
+  workflow_dispatch:               # 支持手动触发测试
+
+jobs:
+  sync-tags:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync new tags from upstream
+        uses: chachako/tags-sync@v1
+        with:
+          base-repository: onevcat/Kingfisher     # 必填！例如：你的上游仓库，如 microsoft/vscode 或 kubernetes/kubernetes
+          head-repository: ${{ github.repository }}   # 你的 fork，通常自动正确，可省略
+          github-token: ${{ secrets.WORKFLOW_TOKEN }} # 用你的 secret（WORKFLOW_TOKEN），权限稳
+          filter-tags: '.*'                           # 默认所有 tag；如果你只想同步特定 tag，改成正则如 '^v\d+\.\d+\.\d+$'（只 vX.Y.Z 正式版）
+          # apply-patch: ''                           # 如果不需要 patch，留空或注释掉（默认不应用 patch，直接 push branch）
+          
+          # 关键：这里加脚本，在每个新 tag 的 branch 同步后，创建并 push 同名 tag
+          scripts-after-sync: |
+            echo "New tag/branch synced: $GITHUB_REF_NAME"
+            # 创建 annotated tag（推荐，带消息）
+            git tag -a "$GITHUB_REF_NAME" -m "Synced from upstream on $(date +%Y-%m-%d)"
+            # 推送这个 tag 到你的 fork origin
+            git push origin "$GITHUB_REF_NAME"
+            # 可选：如果你想额外打个 "synced-" 前缀的 tag
+            # git tag -a "synced-$GITHUB_REF_NAME" -m "Synced upstream tag"
+            # git push origin "synced-$GITHUB_REF_NAME"
+
+      - name: Log completion
+        run: echo "Tag sync job completed!"
