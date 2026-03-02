@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Sync new tags from upstream
-        uses: chachako/tags-sync@v1
+        uses: chachako/tags-sync@master
         with:
           base-repository: onevcat/Kingfisher     # 必填！例如：你的上游仓库，如 microsoft/vscode 或 kubernetes/kubernetes
           head-repository: ${{ github.repository }}   # 你的 fork，通常自动正确，可省略
